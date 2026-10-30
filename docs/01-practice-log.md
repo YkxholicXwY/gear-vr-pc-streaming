@@ -1,7 +1,6 @@
 # Gear VR 接 PC 串流：完整实践记录
 
-> 日期：2026-10-30（14:00 – 20:00，约 6 小时）
-> 参与者：虚无 + 小方
+
 > 结果：**技术链路打通，画质可看，但帧率/发热撑不住，判定为硬件极限**
 
 ---
@@ -31,7 +30,7 @@ Exynos 7420（14nm，2015）+ Gear VR 全封闭空间 + 持续实时解码 = 物
 |---|---|---|
 | 手机 | **SM-G9280**（Galaxy S6 Edge+，国行） | Exynos 7420 / Android 7.0 / arm64-v8a / 5.7寸 2560×1440 |
 | 头显 | **Gear VR SM-R323**（2016 版） | 101° 视野，micro USB 模块，**不支持 USB 数据直连** |
-| 电脑 | 借来的笔记本 | RTX 4060 + R7 7735H，Steam 在 D:\steam，iVRy 在 G:\SteamLibrary |
+| 电脑 | 雷神s2c i7 4720hq 960m
 
 ---
 
@@ -43,7 +42,7 @@ Exynos 7420（14nm，2015）+ Gear VR 全封闭空间 + 持续实时解码 = 物
 3. Steam 装 **iVRy for SteamVR (GearVR/Oculus App Installer)**（DLC，appid 1487090）
 4. Steam 装 **iVRy GearVR System Files Installer**（DLC，appid 3260890）——**这个的加密包解不开，实际没用上，可以跳过**
 
-> 安装位置：`G:\SteamLibrary\steamapps\common\iVRy`
+
 
 ### 阶段 2：手机推送 app
 1. 手机开 **USB 调试**
@@ -100,27 +99,12 @@ APK 备份位置：`D:\GearVR_Fix\apks\`
 3. iVRy 会自动识别手机（Bonjour 服务发现）
 4. 首次**必须**从 Launch 按钮启动（官方要求，会装附带服务）
 
----
 
-## 四、七个关键坑（全是本次实际踩到的）
-
-### 坑 1 ★ Developer mode 导致头显不挂载
-**现象**：插进去显示灰色等待页，`sys.hmt.mounted = false`
-**原因**：`Developer mode` 是给「不插头显跑 VR 应用」用的，开了它系统就不走自动挂载流程
-**解法**：关掉它，只留 `Allow VR API without OSIG`
-**验证**：用 adb 查 `getprop sys.hmt.mounted`，变成 `true` 就对了
-
-### 坑 2 Mirroring mode 干扰 VR 显示
-gearvr.net 实测：Mirroring mode 在 S7/S8/S8+ 上不工作，只在 S10/Note9 有效
-**解法**：关掉
+**现象**：插进去显示灰色等待页，`sys.hmt.mounted = false`（灰色是正常的，这个是后来才发现的，灰色显示出来以后可以开始调试电脑了）
 
 ### 坑 3 Oculus 组件版本错配
 见阶段 4。**这是 Meta 在 2023–2024 年反复搞坏 Gear VR 的后果**，官方更新器有 bug，会把已装好的设备弄成混血状态。
 
-### 坑 4 H.264 编码输出黑屏
-**现象**：数据在传（9.3MB/s），头显全黑
-**证据**：Reddit r/iVRy_VR 有相同报告（"in h264 it turns out black, I can only use h265 or jpeg"）
-**解法**：Frame Encoder 改 **H265** 或 **JPEG**
 
 ### 坑 5 Subsampling 4:2:2 导致解码失败
 4:2:2 色度抽样，老硬解只吃 4:2:0
@@ -222,7 +206,7 @@ Stream Audio:   可开（声音不传到手机，耳机接电脑）
   - 直链：`https://github.com/Axixi2233/moonlight-android/releases/download/260912/axi260912.apk`
   - SHA256：`473185d98aa61b5c3f79a40559986ccd9ead6ed23af8b2ab93d5e3db74e440b4`
   - 镜像：`https://ghproxy.net/` + 完整 GitHub 地址（速度约 14KB/s，很慢）
-- 本地已下载位置：`D:\Moonlight\axi260912.apk`（本次未下完）
+
 - **优点**：只走 H.264 硬解，不烫、不卡、延迟 10–20ms
 - **代价**：平面画面，无立体感、无头部追踪
 
@@ -249,28 +233,6 @@ adb shell getprop sys.hmt.connected   # 物理连接
 adb shell getprop sys.hmt.developer   # 开发者模式（应为 false）
 adb shell getprop sys.hmt.mounted     # 挂载完成（应为 true）
 
-# 查当前界面
-adb shell dumpsys activity activities | grep mFocusedActivity
+gearvr应该是完球了，手机硬件卡死了，当前用的是s6edge＋，不确定s8，s9，s10会强多少，现在这几款手机太难凑出来完美的了，而且脱离性价比了完全没折腾的必要。
+可惜三星没有继续做下去，gearvr或许未来已尽。。。
 
-# 关键路径
-D:\steam\config\steamvr.vrsettings        # iVRy 配置
-G:\SteamLibrary\steamapps\common\iVRy     # iVRy 本体
-D:\GearVR_Fix\apks\                       # 修复用的 9 个 Oculus APK
-D:\Moonlight\axi260912.apk                # 月光阿西西（未下完）
-
-# 日志
-D:\ivry_log.txt / D:\ivry_decode.txt / D:\gearvr_log.txt
-```
-
----
-
-## 十、留给下次的话
-
-今天最大的收获不是"串流成功了"，而是**摸清了这台设备的边界在哪**：
-
-- 系统坏了能修（组件版本错配那套，网上很少有人整理）
-- 链路能通（网络层完全没问题）
-- 但芯片撑不住（这个换设置、换编码器都救不回来）
-
-**下次要用它，别做"玩游戏"的期待。** 拿来看片、逛 SteamVR，那是它的舒适区。
-真要 VR 社交，存钱买 Quest 2——那个差价不是"更好一点"，是"换了一代"。
