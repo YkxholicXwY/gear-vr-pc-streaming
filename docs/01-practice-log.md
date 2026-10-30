@@ -100,7 +100,28 @@ APK 备份位置：`D:\GearVR_Fix\apks\`
 4. 首次**必须**从 Launch 按钮启动（官方要求，会装附带服务）
 
 
+## 四、七个关键坑（全是本次实际踩到的）
+
+> ⚠️ **读之前先看这段**：本文多次提到“灰屏”，但**灰色本身不代表故障**。
+>
+> iVRy 连上电脑、SteamVR 还没启动时，头显里就是一片灰色 + 蓝色三角循环动画，**这是正常等待状态**。
+>
+> 本次之所以一开始判定“系统坏了”，是因为当时**同时**出现了这些证据：
+> - 日志刷 `NoClassDefFoundError: com.oculus.os.SettingsObserverCallback`
+> - `sys.hmt.mounted = false`
+> - 插进去连 Oculus Home 都进不去（原本是可以的）
+>
+> **没有这些证据时，看到灰色先别改设置，先查 `Throughput` 是不是 MB/s 级**（见 [03 篇第三节](03-pitfalls.md)）。
+
+### 坑 1 ★ Developer mode 导致头显不挂载
 **现象**：插进去显示灰色等待页，`sys.hmt.mounted = false`（灰色是正常的，这个是后来才发现的，灰色显示出来以后可以开始调试电脑了）
+**原因**：`Developer mode` 是给「不插头显跑 VR 应用」用的，开了它系统就不走自动挂载流程
+**解法**：关掉它，只留 `Allow VR API without OSIG`
+**验证**：用 adb 查 `getprop sys.hmt.mounted`，变成 `true` 就对了
+
+### 坑 2 Mirroring mode 干扰 VR 显示
+gearvr.net 实测：Mirroring mode 在 S7/S8/S8+ 上不工作，只在 S10/Note9 有效
+**解法**：关掉
 
 ### 坑 3 Oculus 组件版本错配
 见阶段 4。**这是 Meta 在 2023–2024 年反复搞坏 Gear VR 的后果**，官方更新器有 bug，会把已装好的设备弄成混血状态。
